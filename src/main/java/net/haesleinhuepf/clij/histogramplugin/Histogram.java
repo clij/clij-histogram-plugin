@@ -2,8 +2,11 @@ package net.haesleinhuepf.clij.histogramplugin;
 
 import clearcl.ClearCLBuffer;
 import coremem.enums.NativeTypeEnum;
+import ij.IJ;
 import ij.ImagePlus;
+import ij.gui.Line;
 import ij.gui.Plot;
+import ij.measure.ResultsTable;
 import ij.process.ImageProcessor;
 import net.haesleinhuepf.clij.CLIJ;
 import net.haesleinhuepf.clij.kernels.Kernels;
@@ -24,36 +27,54 @@ import java.util.HashMap;
 @Plugin(type = CLIJMacroPlugin.class, name = "CLIJ_convolve")
 public class Histogram extends AbstractCLIJPlugin implements CLIJMacroPlugin, CLIJOpenCLProcessor, OffersDocumentation {
 
+    static ClearCLBuffer partialHistograms = null;
+    static Boolean persistentMemory = true;
+
     @Override
     public boolean executeCL() {
         Integer numberOfBins = asInteger(args[2]);
         Float minimumGreyValue = asFloat(args[3]);
         Float maximumGreyValue = asFloat(args[4]);
         Boolean determineMinMax = asBoolean(args[5]);
+        persistentMemory = asBoolean(args[6]);
 
+        ClearCLBuffer src = (ClearCLBuffer)( args[0]);
         if (determineMinMax) {
-            minimumGreyValue = null;
-            maximumGreyValue = null;
+            minimumGreyValue = new Double(Kernels.minimumOfAllPixels(clij, src)).floatValue();
+            maximumGreyValue = new Double(Kernels.maximumOfAllPixels(clij, src)).floatValue();
         }
 
         Object[] args = openCLBufferArgs();
-        boolean result = fillHistogram(clij, (ClearCLBuffer)( args[0]), (ClearCLBuffer)(args[1]), minimumGreyValue, maximumGreyValue);
+        boolean result = fillHistogram(clij, src, (ClearCLBuffer)(args[1]), minimumGreyValue, maximumGreyValue);
         releaseBuffers(args);
 
+        // the histogram is written in args[1] which is supposed to be a one-dimensional image
         ImagePlus histogramImp = clij.convert((ClearCLBuffer)(args[1]), ImagePlus.class);
+
+        // plot without first eleement
+        histogramImp.setRoi(new Line(1,0.5, histogramImp.getWidth(), 0.5));
+        IJ.run(histogramImp, "Plot Profile", "");
+
+        // plot properly
         float[] determinedHistogram = (float[])(histogramImp.getProcessor().getPixels());
 
         float[] xAxis = new float[asInteger(args[2])];
         xAxis[0] = minimumGreyValue;
         float step = (maximumGreyValue - minimumGreyValue) / (numberOfBins - 1);
-        determinedHistogram[0] = (float)Math.log(determinedHistogram[0]);
 
         for (int i = 1 ; i < xAxis.length; i ++) {
             xAxis[i] = xAxis[i-1] + step;
-            determinedHistogram[i] = (float)Math.log(determinedHistogram[i]);
         }
-
         new Plot("Histogram", "grey value", "log(number of pixels)", xAxis, determinedHistogram, 0).show();
+
+        // send result to results table
+        ResultsTable table = ResultsTable.getResultsTable();
+        for (int i = 0 ; i < xAxis.length; i ++) {
+            table.incrementCounter();
+            table.addValue("Grey value", xAxis[i]);
+            table.addValue("Number of pixels", determinedHistogram[i]);
+        }
+        table.show(table.getTitle());
 
         return result;
     }
@@ -65,15 +86,17 @@ public class Histogram extends AbstractCLIJPlugin implements CLIJMacroPlugin, CL
         long numberOfPartialHistograms = globalSizes[0] * globalSizes[1] * globalSizes[2];
         long[] histogramBufferSize = new long[]{dstHistogram.getWidth(), 1, numberOfPartialHistograms};
 
-        ClearCLBuffer partialHistograms = clij.createCLBuffer(histogramBufferSize, dstHistogram.getNativeType());
-
-        if (minimumGreyValue == null) {
-            minimumGreyValue = new Double(Kernels.minimumOfAllPixels(clij, src)).floatValue();
+        long timeStamp = System.currentTimeMillis();
+        if (partialHistograms == null ||
+            partialHistograms.getWidth() != histogramBufferSize[0] ||
+            partialHistograms.getHeight() != histogramBufferSize[1] ||
+            partialHistograms.getDepth() != histogramBufferSize[2]
+        ) {
+            if (partialHistograms != null ) {
+                partialHistograms.close();
+            }
+            partialHistograms = clij.createCLBuffer(histogramBufferSize, dstHistogram.getNativeType());
         }
-        if (maximumGreyValue == null) {
-            maximumGreyValue = new Double(Kernels.maximumOfAllPixels(clij, src)).floatValue();
-        }
-
         HashMap<String, Object> parameters = new HashMap<>();
         parameters.put("src", src);
         parameters.put("dst_histogram", partialHistograms);
@@ -90,9 +113,12 @@ public class Histogram extends AbstractCLIJPlugin implements CLIJMacroPlugin, CL
                 parameters);
 
         Kernels.sumZProjection(clij, partialHistograms, dstHistogram);
+        IJ.log("Histogram generation took " + (System.currentTimeMillis() - timeStamp) + " msec");
 
-        partialHistograms.close();
-
+        if (!persistentMemory) {
+            partialHistograms.close();
+            partialHistograms = null;
+        }
         return true;
     }
 
@@ -117,12 +143,12 @@ public class Histogram extends AbstractCLIJPlugin implements CLIJMacroPlugin, CL
 
     @Override
     public String getParameterHelpText() {
-        return "Image source,  Image destination, Number numberOfBins, Number minimumGreyValue, Number maximumGreyValue, Boolean determineMinAndMax";
+        return "Image source, Image destination, Number numberOfBins, Number minimumGreyValue, Number maximumGreyValue, Boolean determineMinAndMax, Boolean persistentMemory";
     }
 
     @Override
     public String getDescription() {
-        return "Determines the histogram of a given image.";
+        return "Determines the histogram of a given image. Additional speedup can be gained if persistentMemory is turned on images of same size are repeatedly processed to histograms of same size. The disadvantage is that height*depth*numberOfBins pixels are blocked permanently in GPU.";
     }
 
     @Override
