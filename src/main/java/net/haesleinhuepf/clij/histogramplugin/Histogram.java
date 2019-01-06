@@ -29,6 +29,12 @@ public class Histogram extends AbstractCLIJPlugin implements CLIJMacroPlugin, CL
         Integer numberOfBins = asInteger(args[2]);
         Float minimumGreyValue = asFloat(args[3]);
         Float maximumGreyValue = asFloat(args[4]);
+        Boolean determineMinMax = asBoolean(args[5]);
+
+        if (determineMinMax) {
+            minimumGreyValue = null;
+            maximumGreyValue = null;
+        }
 
         Object[] args = openCLBufferArgs();
         boolean result = fillHistogram(clij, (ClearCLBuffer)( args[0]), (ClearCLBuffer)(args[1]), minimumGreyValue, maximumGreyValue);
@@ -40,12 +46,14 @@ public class Histogram extends AbstractCLIJPlugin implements CLIJMacroPlugin, CL
         float[] xAxis = new float[asInteger(args[2])];
         xAxis[0] = minimumGreyValue;
         float step = (maximumGreyValue - minimumGreyValue) / (numberOfBins - 1);
+        determinedHistogram[0] = (float)Math.log(determinedHistogram[0]);
 
         for (int i = 1 ; i < xAxis.length; i ++) {
             xAxis[i] = xAxis[i-1] + step;
+            determinedHistogram[i] = (float)Math.log(determinedHistogram[i]);
         }
 
-        new Plot("Histogram", "grey value", "number of pixels", xAxis, determinedHistogram, 0).show();
+        new Plot("Histogram", "grey value", "log(number of pixels)", xAxis, determinedHistogram, 0).show();
 
         return result;
     }
@@ -58,6 +66,13 @@ public class Histogram extends AbstractCLIJPlugin implements CLIJMacroPlugin, CL
         long[] histogramBufferSize = new long[]{dstHistogram.getWidth(), 1, numberOfPartialHistograms};
 
         ClearCLBuffer partialHistograms = clij.createCLBuffer(histogramBufferSize, dstHistogram.getNativeType());
+
+        if (minimumGreyValue == null) {
+            minimumGreyValue = new Double(Kernels.minimumOfAllPixels(clij, src)).floatValue();
+        }
+        if (maximumGreyValue == null) {
+            maximumGreyValue = new Double(Kernels.maximumOfAllPixels(clij, src)).floatValue();
+        }
 
         HashMap<String, Object> parameters = new HashMap<>();
         parameters.put("src", src);
@@ -102,13 +117,12 @@ public class Histogram extends AbstractCLIJPlugin implements CLIJMacroPlugin, CL
 
     @Override
     public String getParameterHelpText() {
-        return "Image source,  Image destination, Number numberOfBins, Number minimumGreyValue, Number maximumGreyValue";
+        return "Image source,  Image destination, Number numberOfBins, Number minimumGreyValue, Number maximumGreyValue, Boolean determineMinAndMax";
     }
 
     @Override
     public String getDescription() {
-        return "Histogram the image with a given kernel image. Kernel image and source image should have the same\n" +
-                "bit-type. Furthermore, it is recommended that the kernel image has an odd size in X, Y and Z.";
+        return "Determines the histogram of a given image.";
     }
 
     @Override
