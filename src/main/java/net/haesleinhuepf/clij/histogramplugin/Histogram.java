@@ -27,8 +27,6 @@ import java.util.HashMap;
 @Plugin(type = CLIJMacroPlugin.class, name = "CLIJ_convolve")
 public class Histogram extends AbstractCLIJPlugin implements CLIJMacroPlugin, CLIJOpenCLProcessor, OffersDocumentation {
 
-    static ClearCLBuffer partialHistograms = null;
-    static Boolean persistentMemory = true;
 
     @Override
     public boolean executeCL() {
@@ -36,14 +34,16 @@ public class Histogram extends AbstractCLIJPlugin implements CLIJMacroPlugin, CL
         Float minimumGreyValue = asFloat(args[3]);
         Float maximumGreyValue = asFloat(args[4]);
         Boolean determineMinMax = asBoolean(args[5]);
-        persistentMemory = asBoolean(args[6]);
 
         ClearCLBuffer src = (ClearCLBuffer)( args[0]);
+
+        // determine min and max intensity if necessary
         if (determineMinMax) {
             minimumGreyValue = new Double(Kernels.minimumOfAllPixels(clij, src)).floatValue();
             maximumGreyValue = new Double(Kernels.maximumOfAllPixels(clij, src)).floatValue();
         }
 
+        // determine histogram
         Object[] args = openCLBufferArgs();
         boolean result = fillHistogram(clij, src, (ClearCLBuffer)(args[1]), minimumGreyValue, maximumGreyValue);
         releaseBuffers(args);
@@ -57,7 +57,6 @@ public class Histogram extends AbstractCLIJPlugin implements CLIJMacroPlugin, CL
 
         // plot properly
         float[] determinedHistogram = (float[])(histogramImp.getProcessor().getPixels());
-
         float[] xAxis = new float[asInteger(args[2])];
         xAxis[0] = minimumGreyValue;
         float step = (maximumGreyValue - minimumGreyValue) / (numberOfBins - 1);
@@ -87,25 +86,16 @@ public class Histogram extends AbstractCLIJPlugin implements CLIJMacroPlugin, CL
         long[] histogramBufferSize = new long[]{dstHistogram.getWidth(), 1, numberOfPartialHistograms};
 
         long timeStamp = System.currentTimeMillis();
-        if (partialHistograms == null ||
-            partialHistograms.getWidth() != histogramBufferSize[0] ||
-            partialHistograms.getHeight() != histogramBufferSize[1] ||
-            partialHistograms.getDepth() != histogramBufferSize[2]
-        ) {
-            if (partialHistograms != null ) {
-                partialHistograms.close();
-            }
-            partialHistograms = clij.createCLBuffer(histogramBufferSize, dstHistogram.getNativeType());
-        }
+
+        // allocate memory for partial histograms
+        ClearCLBuffer  partialHistograms = clij.createCLBuffer(histogramBufferSize, dstHistogram.getNativeType());
+
+        //
         HashMap<String, Object> parameters = new HashMap<>();
         parameters.put("src", src);
         parameters.put("dst_histogram", partialHistograms);
         parameters.put("minimum", minimumGreyValue);
         parameters.put("maximum", maximumGreyValue);
-        parameters.put("num_pixels_per_workitem", new Integer((int)src.getHeight()));
-
-        //globalSizes[2] = 1; //src.getDepth();
-
         clij.execute(Histogram.class,
                 "histogram.cl",
                 "histogram_image_" + src.getDimension() + "d",
@@ -115,10 +105,7 @@ public class Histogram extends AbstractCLIJPlugin implements CLIJMacroPlugin, CL
         Kernels.sumZProjection(clij, partialHistograms, dstHistogram);
         IJ.log("Histogram generation took " + (System.currentTimeMillis() - timeStamp) + " msec");
 
-        if (!persistentMemory) {
-            partialHistograms.close();
-            partialHistograms = null;
-        }
+        partialHistograms.close();
         return true;
     }
 
@@ -143,12 +130,12 @@ public class Histogram extends AbstractCLIJPlugin implements CLIJMacroPlugin, CL
 
     @Override
     public String getParameterHelpText() {
-        return "Image source, Image destination, Number numberOfBins, Number minimumGreyValue, Number maximumGreyValue, Boolean determineMinAndMax, Boolean persistentMemory";
+        return "Image source, Image destination, Number numberOfBins, Number minimumGreyValue, Number maximumGreyValue, Boolean determineMinAndMax";
     }
 
     @Override
     public String getDescription() {
-        return "Determines the histogram of a given image. Additional speedup can be gained if persistentMemory is turned on images of same size are repeatedly processed to histograms of same size. The disadvantage is that height*depth*numberOfBins pixels are blocked permanently in GPU.";
+        return "Determines the histogram of a given image.";
     }
 
     @Override
