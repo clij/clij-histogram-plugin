@@ -60,51 +60,6 @@ public class HistogramTest {
         checkImage(imp, referenceHistogram, 0f, 255f);
     }
 
-    Float minGreyValue = null;
-    Float maxGreyValue = null;
-
-    @Test
-    public void testPerformanceOfGPUBasesHistogramGeneration() {
-        for (int i = 0; i < 10; i++) {
-            int imageWidth = 1024;
-            int imageHeight = 1024;
-            int imageDepth = 50;
-
-            long[] referenceHistogram = new long[256];
-            referenceHistogram[2] = 34;
-            referenceHistogram[100] = 5;
-            referenceHistogram[145] = 22;
-            referenceHistogram[0] = imageWidth * imageHeight * imageDepth - sumArray(referenceHistogram);
-
-            ImagePlus imp50MB = getImageWithDefinedHistogram(imageWidth, imageHeight, imageDepth, referenceHistogram, 0, 255, 8);
-
-            int numberOfBins = 256;
-
-            CLIJ clij = CLIJ.getInstance();
-
-            ClearCLBuffer input = clij.convert(imp50MB, ClearCLBuffer.class);
-
-            RandomAccessibleInterval<FloatType> rai = ImageJFunctions.convertFloat(imp50MB);
-
-            ElapsedTime.measureForceOutput("Min/max determination on GPU", () -> {
-                minGreyValue = new Double(Kernels.minimumOfAllPixels(clij, input)).floatValue();
-                maxGreyValue = new Double(Kernels.maximumOfAllPixels(clij, input)).floatValue();
-
-            });
-
-            ElapsedTime.measureForceOutput("Histogram on GPU", () -> {
-                Histogram.histogram(clij, input, minGreyValue, maxGreyValue, numberOfBins);
-            });
-            ElapsedTime.measureForceOutput("Histogram on CPU", () -> {
-                determineHistogram(rai, minGreyValue, maxGreyValue, numberOfBins);
-            });
-
-
-            // checkImage(imp, referenceHistogram, 0f, 255f);
-
-
-        }
-    }
 
     private void checkImage(ImagePlus imp, long[] referenceHistogram, Float minGreyValue, Float maxGreyValue) {
         CLIJ clij = CLIJ.getInstance();
@@ -137,7 +92,7 @@ public class HistogramTest {
 
     }
 
-    private static ImagePlus getImageWithDefinedHistogram(int imageWidth, int imageHeight, int imageDepth, long[] histogram, float minimum, float maximum, int bitType) {
+    static ImagePlus getImageWithDefinedHistogram(int imageWidth, int imageHeight, int imageDepth, long[] histogram, float minimum, float maximum, int bitType) {
         ImagePlus imp = NewImage.createImage("test", imageWidth, imageHeight, imageDepth, bitType, NewImage.FILL_BLACK);
 
         int index = 1; // we don't start with 0 because all pixels are zero initially
@@ -164,22 +119,9 @@ public class HistogramTest {
         return imp;
     }
 
-    private long[] determineHistogram(RandomAccessibleInterval<FloatType> rai, float minimuGreyValue, float maximumGreyValue, int numberOfBins) {
-        long[] histogram = new long[numberOfBins];
 
-        float range = maximumGreyValue - minimuGreyValue;
 
-        Cursor<FloatType> cursor = Views.iterable(rai).cursor();
-
-        while (cursor.hasNext()) {
-            int index = (int)(((cursor.next().get() - minimuGreyValue) / range) * (numberOfBins - 1));
-            histogram[index]++;
-        }
-
-        return histogram;
-    }
-
-    private static long sumArray(long[] array) {
+    static long sumArray(long[] array) {
         long sum = 0;
         for (long item : array) {
             sum += item;
@@ -187,7 +129,7 @@ public class HistogramTest {
         return sum;
     }
 
-    public static boolean compareArrays(long[] a, float[] b, float tolerance) {
+    static boolean compareArrays(long[] a, float[] b, float tolerance) {
         if (a.length != b.length) {
             System.out.println("Array sizes differ");
             return false;
