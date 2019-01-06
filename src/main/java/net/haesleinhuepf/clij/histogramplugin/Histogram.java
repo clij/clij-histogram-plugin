@@ -80,7 +80,7 @@ public class Histogram extends AbstractCLIJPlugin implements CLIJMacroPlugin, CL
 
     static boolean fillHistogram(CLIJ clij, ClearCLBuffer src, ClearCLBuffer dstHistogram, Float minimumGreyValue, Float maximumGreyValue) {
 
-        long[] globalSizes = new long[]{src.getHeight(),src.getDepth(), 1};
+        long[] globalSizes = new long[]{src.getHeight(), 1, 1};
 
         long numberOfPartialHistograms = globalSizes[0] * globalSizes[1] * globalSizes[2];
         long[] histogramBufferSize = new long[]{dstHistogram.getWidth(), 1, numberOfPartialHistograms};
