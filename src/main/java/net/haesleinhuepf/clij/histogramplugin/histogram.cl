@@ -31,8 +31,10 @@
 //
 //
 
+const sampler_t sampler = CLK_NORMALIZED_COORDS_FALSE | CLK_ADDRESS_CLAMP_TO_EDGE | CLK_FILTER_NEAREST;
+
 kernel
-void histogram_image_2d(DTYPE_IMAGE_IN_2D src, int num_pixels_per_workitem, DTYPE_IMAGE_OUT_3D dst_histogram, float minimum, float maximum)
+void histogram_image_2d(DTYPE_IMAGE_IN_2D src, DTYPE_IMAGE_OUT_3D dst_histogram, float minimum, float maximum)
 {
     int     image_width = GET_IMAGE_WIDTH(src);
     int     image_height = GET_IMAGE_HEIGHT(src);
@@ -42,7 +44,7 @@ void histogram_image_2d(DTYPE_IMAGE_IN_2D src, int num_pixels_per_workitem, DTYP
     uint  tmp_histogram[GET_IMAGE_WIDTH(dst_histogram)];
 
     for (int x = 0; x < image_width; x++) {
-        float clr = READ_IMAGE_2D(src, CLK_NORMALIZED_COORDS_FALSE | CLK_ADDRESS_CLAMP_TO_EDGE | CLK_FILTER_NEAREST, (int2)(x, y)).x;
+        float clr = READ_IMAGE_2D(src, sampler, (int2)(x, y)).x;
         uchar   indx_x;
         indx_x = convert_uchar_sat( (clr - minimum) * (float)(GET_IMAGE_WIDTH(dst_histogram)) / range );
         tmp_histogram[indx_x]++;
@@ -55,7 +57,7 @@ void histogram_image_2d(DTYPE_IMAGE_IN_2D src, int num_pixels_per_workitem, DTYP
 }
 
 kernel
-void histogram_image_3d(DTYPE_IMAGE_IN_3D src, int num_pixels_per_workitem, DTYPE_IMAGE_OUT_3D dst_histogram, float minimum, float maximum)
+void histogram_image_3d(DTYPE_IMAGE_IN_3D src, DTYPE_IMAGE_OUT_3D dst_histogram, float minimum, float maximum)
 {
     int     image_width = GET_IMAGE_WIDTH(src);
     int     image_height = GET_IMAGE_HEIGHT(src);
@@ -67,7 +69,7 @@ void histogram_image_3d(DTYPE_IMAGE_IN_3D src, int num_pixels_per_workitem, DTYP
     uint  tmp_histogram[GET_IMAGE_WIDTH(dst_histogram)];
 
     for (int x = 0; x < image_width; x++) {
-        float clr = READ_IMAGE_3D(src, CLK_NORMALIZED_COORDS_FALSE | CLK_ADDRESS_CLAMP_TO_EDGE | CLK_FILTER_NEAREST, (int4)(x, y, z, 0)).x;
+        float clr = READ_IMAGE_3D(src, sampler, (int4)(x, y, z, 0)).x;
         uchar   indx_x;
         indx_x = convert_uchar_sat( (clr - minimum) * (float)(GET_IMAGE_WIDTH(dst_histogram)) / range );
         tmp_histogram[indx_x]++;
