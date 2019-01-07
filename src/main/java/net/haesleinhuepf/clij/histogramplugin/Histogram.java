@@ -80,7 +80,11 @@ public class Histogram extends AbstractCLIJPlugin implements CLIJMacroPlugin, CL
 
     static boolean fillHistogram(CLIJ clij, ClearCLBuffer src, ClearCLBuffer dstHistogram, Float minimumGreyValue, Float maximumGreyValue) {
 
-        long[] globalSizes = new long[]{src.getHeight(), 1, 1};
+        int stepSizeX = 1;
+        int stepSizeY = 1;
+        int stepSizeZ = 1;
+
+        long[] globalSizes = new long[]{src.getHeight() / stepSizeZ, 1, 1};
 
         long numberOfPartialHistograms = globalSizes[0] * globalSizes[1] * globalSizes[2];
         long[] histogramBufferSize = new long[]{dstHistogram.getWidth(), 1, numberOfPartialHistograms};
@@ -96,6 +100,11 @@ public class Histogram extends AbstractCLIJPlugin implements CLIJMacroPlugin, CL
         parameters.put("dst_histogram", partialHistograms);
         parameters.put("minimum", minimumGreyValue);
         parameters.put("maximum", maximumGreyValue);
+        parameters.put("step_size_x", stepSizeX);
+        parameters.put("step_size_y", stepSizeY);
+        if (src.getDimension() > 2) {
+            parameters.put("step_size_z", stepSizeZ);
+        }
         clij.execute(Histogram.class,
                 "histogram.cl",
                 "histogram_image_" + src.getDimension() + "d",

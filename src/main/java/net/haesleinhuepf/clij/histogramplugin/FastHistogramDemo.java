@@ -30,6 +30,10 @@ public class FastHistogramDemo {
         Float minimumGreyValue = 0f;
         Float maximumGreyValue = 65535f;
 
+        // potential speedup by sparse sampling; enter 2 or 4 to speedup:
+        int stepSizeXY = 1;
+        int stepSizeZ = 1;
+
         ClearCLBuffer partialHistograms = clij.createCLBuffer(new long[]{numberOfBins, 1, input.getHeight()}, NativeTypeEnum.Float);
         ClearCLBuffer dstHistogram = clij.createCLBuffer(new long[]{numberOfBins, 1, 1}, NativeTypeEnum.Float);
 
@@ -43,12 +47,18 @@ public class FastHistogramDemo {
             
             timeStamp = System.currentTimeMillis();
             // determine partial histograms
-            long[] globalSizes = new long[]{src.getHeight(),1, 1};
+            long[] globalSizes = new long[]{src.getHeight() / stepSizeZ,1, 1};
             HashMap<String, Object> parameters = new HashMap<>();
             parameters.put("src", src);
             parameters.put("dst_histogram", partialHistograms);
             parameters.put("minimum", minimumGreyValue);
             parameters.put("maximum", maximumGreyValue);
+            parameters.put("step_size_x", stepSizeXY);
+            parameters.put("step_size_y", stepSizeXY);
+            if (src.getDimension() > 2) {
+                parameters.put("step_size_z", stepSizeZ);
+            }
+
             clij.execute(Histogram.class,
                     "histogram.cl",
                     "histogram_image_" + src.getDimension() + "d",
