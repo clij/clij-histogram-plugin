@@ -30,8 +30,8 @@ public class FastHistogramDemo {
         Float minimumGreyValue = 0f;
         Float maximumGreyValue = 65535f;
 
-        ClearCLBuffer partialHistograms = clij.createCLBuffer(new long[]{numberOfBins, 1, input.getHeight()}, NativeTypeEnum.UnsignedShort);
-        ClearCLBuffer dstHistogram = clij.createCLBuffer(new long[]{numberOfBins, 1, 1}, NativeTypeEnum.UnsignedShort);
+        ClearCLBuffer partialHistograms = clij.createCLBuffer(new long[]{numberOfBins, 1, input.getHeight()}, NativeTypeEnum.Float);
+        ClearCLBuffer dstHistogram = clij.createCLBuffer(new long[]{numberOfBins, 1, 1}, NativeTypeEnum.Float);
 
         // we run it several times because the first iteration is usually slower than the following iterations
         for (int i = 0; i < 10; i ++) {
@@ -64,7 +64,7 @@ public class FastHistogramDemo {
             // convert result back as float array to GPU
             timeStamp = System.currentTimeMillis();
             ImagePlus histogramImp = clij.convert(dstHistogram, ImagePlus.class);
-            short[] determinedHistogram = (short[])(histogramImp.getProcessor().getPixels());
+            float[] determinedHistogram = (float[])(histogramImp.getProcessor().getPixels());
             System.out.println("GPU->CPU conversion took " + (System.currentTimeMillis() - timeStamp) + " msec");
 
             // output result
