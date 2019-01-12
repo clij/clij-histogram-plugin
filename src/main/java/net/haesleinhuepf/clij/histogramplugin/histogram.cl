@@ -42,6 +42,9 @@ void histogram_image_2d(DTYPE_IMAGE_IN_2D src, DTYPE_IMAGE_OUT_3D dst_histogram,
     float range = maximum - minimum;
 
     uint tmp_histogram[GET_IMAGE_WIDTH(dst_histogram)];
+    for (int i = 0; i < GET_IMAGE_WIDTH(dst_histogram); i++) {
+        tmp_histogram[i] = 0;
+    }
 
     for (int x = 0; x < image_width; x+= step_size_x) {
         float clr = READ_IMAGE_2D(src, sampler, (int2)(x, y)).x;
@@ -66,6 +69,9 @@ void histogram_image_3d(DTYPE_IMAGE_IN_3D src, DTYPE_IMAGE_OUT_3D dst_histogram,
     float range = maximum - minimum;
 
     uint tmp_histogram[GET_IMAGE_WIDTH(dst_histogram)];
+    for (int i = 0; i < GET_IMAGE_WIDTH(dst_histogram); i++) {
+        tmp_histogram[i] = 0;
+    }
 
     for (int z = 0; z < image_depth; z+= step_size_z) {
         for (int x = 0; x < image_width; x+= step_size_x) {
