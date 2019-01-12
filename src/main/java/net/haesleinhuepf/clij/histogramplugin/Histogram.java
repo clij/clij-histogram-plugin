@@ -52,8 +52,8 @@ public class Histogram extends AbstractCLIJPlugin implements CLIJMacroPlugin, CL
         ImagePlus histogramImp = clij.convert((ClearCLBuffer)(args[1]), ImagePlus.class);
 
         // plot without first eleement
-        histogramImp.setRoi(new Line(1,0.5, histogramImp.getWidth(), 0.5));
-        IJ.run(histogramImp, "Plot Profile", "");
+        //histogramImp.setRoi(new Line(1,0.5, histogramImp.getWidth(), 0.5));
+        //IJ.run(histogramImp, "Plot Profile", "");
 
         // plot properly
         float[] determinedHistogram = (float[])(histogramImp.getProcessor().getPixels());
@@ -64,7 +64,7 @@ public class Histogram extends AbstractCLIJPlugin implements CLIJMacroPlugin, CL
         for (int i = 1 ; i < xAxis.length; i ++) {
             xAxis[i] = xAxis[i-1] + step;
         }
-        new Plot("Histogram", "grey value", "log(number of pixels)", xAxis, determinedHistogram, 0).show();
+        //new Plot("Histogram", "grey value", "log(number of pixels)", xAxis, determinedHistogram, 0).show();
 
         // send result to results table
         ResultsTable table = ResultsTable.getResultsTable();
