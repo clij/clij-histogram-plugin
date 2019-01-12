@@ -83,7 +83,7 @@ void histogram_image_3d(DTYPE_IMAGE_IN_3D src, DTYPE_IMAGE_OUT_3D dst_histogram,
     }
 
     for (int idx = 0; idx < GET_IMAGE_WIDTH(dst_histogram); idx++) {
-        int4 pos = {idx, 0, y * image_depth, 0};
+        int4 pos = {idx, 0, y, 0};
         WRITE_IMAGE_3D(dst_histogram, pos,(DTYPE_OUT)tmp_histogram[idx]);
     }
 }
