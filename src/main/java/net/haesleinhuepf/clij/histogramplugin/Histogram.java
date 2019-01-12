@@ -24,7 +24,7 @@ import java.util.HashMap;
  * Author: @haesleinhuepf
  * 12 2018
  */
-@Plugin(type = CLIJMacroPlugin.class, name = "CLIJ_convolve")
+@Plugin(type = CLIJMacroPlugin.class, name = "CLIJ_histogram")
 public class Histogram extends AbstractCLIJPlugin implements CLIJMacroPlugin, CLIJOpenCLProcessor, OffersDocumentation {
 
 
