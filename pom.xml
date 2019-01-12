@@ -8,13 +8,13 @@
 	<parent>
 		<groupId>net.haesleinhuepf</groupId>
 		<artifactId>clij-parent-pom</artifactId>
-		<version>0.4.1</version>
+		<version>0.6.0</version>
 		<relativePath />
 	</parent>
 
 	<groupId>net.haesleinhuepf</groupId>
 	<artifactId>clij_histogram_plugin</artifactId>
-	<version>0.1.0</version>
+	<version>0.1.2</version>
 
 	<name>clij-histogram-plugin</name>
 	<description>clij-histogram-plugin</description>
