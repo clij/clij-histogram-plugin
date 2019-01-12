@@ -16,13 +16,13 @@ import org.scijava.plugin.Plugin;
 import java.util.Arrays;
 
 /**
- * AutoThreshold
+ * AutomaticThreshold
  * <p>
  * Author: @haesleinhuepf
  * January 2019
  */
 @Plugin(type = CLIJMacroPlugin.class, name = "CLIJ_automaticThreshold")
-public class AutoThreshold extends AbstractCLIJPlugin implements CLIJMacroPlugin, CLIJOpenCLProcessor, OffersDocumentation {
+public class AutomaticThreshold extends AbstractCLIJPlugin implements CLIJMacroPlugin, CLIJOpenCLProcessor, OffersDocumentation {
 
     @Override
     public boolean executeCL() {
