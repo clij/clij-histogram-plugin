@@ -1,7 +1,7 @@
 package net.haesleinhuepf.clij.histogramplugin;
 
-import clearcl.ClearCLBuffer;
-import coremem.enums.NativeTypeEnum;
+import net.haesleinhuepf.clij.clearcl.ClearCLBuffer;
+import net.haesleinhuepf.clij.coremem.enums.NativeTypeEnum;
 import ij.IJ;
 import ij.ImagePlus;
 import ij.gui.Line;
