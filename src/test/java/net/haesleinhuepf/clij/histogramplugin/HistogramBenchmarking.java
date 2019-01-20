@@ -1,7 +1,7 @@
 package net.haesleinhuepf.clij.histogramplugin;
 
-import clearcl.ClearCLBuffer;
-import clearcl.util.ElapsedTime;
+import net.haesleinhuepf.clij.clearcl.ClearCLBuffer;
+import net.haesleinhuepf.clij.clearcl.util.ElapsedTime;
 import ij.ImagePlus;
 import net.haesleinhuepf.clij.CLIJ;
 import net.haesleinhuepf.clij.kernels.Kernels;
