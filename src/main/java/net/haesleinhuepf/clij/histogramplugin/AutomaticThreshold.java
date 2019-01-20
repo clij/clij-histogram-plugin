@@ -39,7 +39,6 @@ public class AutomaticThreshold extends AbstractCLIJPlugin implements CLIJMacroP
 
     public static boolean applyAutomaticThreshold(CLIJ clij, ClearCLBuffer src, ClearCLBuffer dst, int numberOfBins, String selectedThresholdMethod)
     {
-
         // determine min and max intensity
         Float minimumGreyValue = 0f;
         Float maximumGreyValue = 0f;
@@ -47,30 +46,19 @@ public class AutomaticThreshold extends AbstractCLIJPlugin implements CLIJMacroP
         if (src.getNativeType() == NativeTypeEnum.UnsignedByte) {
             minimumGreyValue = 0f;
             maximumGreyValue = 255f;
-        /*} else if (src.getNativeType() == NativeTypeEnum.Byte) {
-            minimumGreyValue = (float)Byte.MIN_VALUE;
-            maximumGreyValue = (float)Byte.MAX_VALUE;
-        } else if (src.getNativeType() == NativeTypeEnum.UnsignedShort) {
-            minimumGreyValue = 0f;
-            maximumGreyValue = 65535f;
-        } else if (src.getNativeType() == NativeTypeEnum.Short) {
-            minimumGreyValue = (float)Short.MIN_VALUE;
-            maximumGreyValue = (float)Short.MAX_VALUE;*/
         } else {
             minimumGreyValue = new Double(Kernels.minimumOfAllPixels(clij, src)).floatValue();
             maximumGreyValue = new Double(Kernels.maximumOfAllPixels(clij, src)).floatValue();
         }
 
-        System.out.println("Minimum: " + minimumGreyValue);
-        System.out.println("Maximum: " + maximumGreyValue);
+        if (CLIJ.debug) {
+            System.out.println("Minimum: " + minimumGreyValue);
+            System.out.println("Maximum: " + maximumGreyValue);
+        }
 
         // determine histogram
-        //Object[] args = openCLBufferArgs();
         ClearCLBuffer histogram = clij.createCLBuffer(new long[]{numberOfBins,1,1}, NativeTypeEnum.Float);
         Histogram.fillHistogram(clij, src, histogram, minimumGreyValue, maximumGreyValue);
-        //releaseBuffers(args);
-
-        System.out.println("CL sum " + clij.op().sumPixels(histogram));
 
         // the histogram is written in args[1] which is supposed to be a one-dimensional image
         ImagePlus histogramImp = clij.convert(histogram, ImagePlus.class);
@@ -85,9 +73,11 @@ public class AutomaticThreshold extends AbstractCLIJPlugin implements CLIJMacroP
             convertedHistogram[i] = (int)determinedHistogram[i];
             sum += convertedHistogram[i];
         }
-        System.out.println("Sum: " + sum);
+        if (CLIJ.debug) {
+            System.out.println("Sum: " + sum);
+        }
 
-
+        // check if given threshold method exists
         String method = "Default";
 
         for (String choice : AutoThresholder.getMethods()) {
@@ -95,15 +85,20 @@ public class AutomaticThreshold extends AbstractCLIJPlugin implements CLIJMacroP
                 method = choice;
             }
         }
-        System.out.println("Method: " + method);
+        if (CLIJ.debug) {
+            System.out.println("Threshold method: " + method);
+        }
 
         float threshold = new AutoThresholder().getThreshold(method, convertedHistogram);
 
         // math source https://github.com/imagej/ImageJA/blob/master/src/main/java/ij/process/ImageProcessor.java#L692
         threshold = minimumGreyValue + ((threshold + 1.0f)/255.0f)*(maximumGreyValue-minimumGreyValue);
 
-        System.out.println("Threshold: " + threshold);
+        if (CLIJ.debug) {
+            System.out.println("Threshold: " + threshold);
+        }
 
+        // apply threshold
         clij.op().threshold(src, dst, threshold);
 
         return true;
