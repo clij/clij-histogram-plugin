@@ -1,5 +1,6 @@
 package net.haesleinhuepf.clij.histogramplugin;
 
+import net.haesleinhuepf.clij.CLIJ;
 import net.haesleinhuepf.clij.clearcl.ClearCLBuffer;
 import net.haesleinhuepf.clij.coremem.enums.NativeTypeEnum;
 import ij.IJ;
@@ -28,8 +29,16 @@ public class AutomaticThreshold extends AbstractCLIJPlugin implements CLIJMacroP
     public boolean executeCL() {
         Integer numberOfBins = 256;
 
-        ClearCLBuffer src = (ClearCLBuffer)( args[0]);
-        ClearCLBuffer dst = (ClearCLBuffer)( args[1]);
+        ClearCLBuffer src = (ClearCLBuffer) (args[0]);
+        ClearCLBuffer dst = (ClearCLBuffer) (args[1]);
+        String selectedThresholdMethod = (String) args[2];
+
+        return applyAutomaticThreshold(clij, src, dst, numberOfBins, selectedThresholdMethod);
+
+    }
+
+    public static boolean applyAutomaticThreshold(CLIJ clij, ClearCLBuffer src, ClearCLBuffer dst, int numberOfBins, String selectedThresholdMethod)
+    {
 
         // determine min and max intensity
         Float minimumGreyValue = 0f;
@@ -56,7 +65,7 @@ public class AutomaticThreshold extends AbstractCLIJPlugin implements CLIJMacroP
         System.out.println("Maximum: " + maximumGreyValue);
 
         // determine histogram
-        Object[] args = openCLBufferArgs();
+        //Object[] args = openCLBufferArgs();
         ClearCLBuffer histogram = clij.createCLBuffer(new long[]{numberOfBins,1,1}, NativeTypeEnum.Float);
         Histogram.fillHistogram(clij, src, histogram, minimumGreyValue, maximumGreyValue);
         //releaseBuffers(args);
@@ -80,10 +89,9 @@ public class AutomaticThreshold extends AbstractCLIJPlugin implements CLIJMacroP
 
 
         String method = "Default";
-        String userValue = (String)args[2];
 
         for (String choice : AutoThresholder.getMethods()) {
-            if (choice.toLowerCase().compareTo(userValue.toLowerCase()) == 0) {
+            if (choice.toLowerCase().compareTo(selectedThresholdMethod.toLowerCase()) == 0) {
                 method = choice;
             }
         }
